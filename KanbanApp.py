@@ -12,6 +12,7 @@ import itertools
 import csv
 import sys
 import importlib
+import pathlib
 
 class KanbanConfig:
 
@@ -37,16 +38,14 @@ class KanbanConfig:
 class KanbanApp:
 
     def __init__(self):
+        self._initialize_argument_parsers()
+        self._initialize_command_handlers()
+
         parser = ArgumentParser()
         parser.add_argument('-d','--kanban-store', required=False, default=os.path.join(os.environ['HOME'], '.kanban_store'))
 
         parser.add_argument('command')
         self.args, rest = parser.parse_known_args()
-
-        self._load_board()
-        self._initialize_plugins_from_board()
-        self._initialize_argument_parsers()
-        self._initialize_command_handlers()
 
         if self.args.command.isnumeric():
             rest.insert(0, self.args.command)
@@ -55,6 +54,11 @@ class KanbanApp:
             self.command = self.args.command
 
         self.cmd_args = self.command_parsers[self.command].parse_args(rest)
+
+        if self.command != 'init':
+            self._load_board()
+            self._initialize_plugins_from_board()
+
 
     def error(self, msg):
         print("ERROR:", msg, file=sys.stderr)
@@ -86,6 +90,7 @@ class KanbanApp:
                 'list': self._make_parsers_list(),
                 'add': self._make_parsers_add(),
                 'show': self._make_parsers_show(),
+                'init': self._make_parsers_init(),
         }
 
     def _initialize_command_handlers(self):
@@ -94,6 +99,7 @@ class KanbanApp:
                 'list': self.list,
                 'add': self.add,
                 'show': self.show,
+                'init': self.init,
                 # 'renum'
         }
 
@@ -118,6 +124,12 @@ class KanbanApp:
         parser.add_argument("keyvalue", nargs="*")
         return parser
 
+    def _make_parsers_init(self):
+        parser = ArgumentParser()
+        # TODO: template option?
+        parser.add_argument("destination")
+        return parser
+
     def _parse_keyvalues(self, default_key):
         key_values = [ a.split('=',maxsplit=1) for a in self.cmd_args.keyvalue ]
 
@@ -134,6 +146,33 @@ class KanbanApp:
                 key, value = kv
             d[key] = value
         return d
+
+    def init(self):
+        # test if destination board.kbb exists
+        board_dir = pathlib.Path(self.cmd_args.destination)
+        if (board_dir / "board.kbb").exists():
+            self.error("Directory already initialized")
+        # make directory and copy template
+        board_dir.mkdir(parents=True)
+        with open(board_dir / "board.kbb", "w") as f:
+            f.write("""
+# extra plugins to load
+plugins:
+- testplugin
+# statuses to show on the board
+show_statuses:
+- READY
+- DOING
+- DONE
+# default values for fields
+default_fields:
+  description: hello
+  status: READY
+# views to display the fields
+show_field_format:
+  default: '%(id)3d %(description)s'
+  test: '%(id)3d %(tag)-3s %(description)s'
+""")
 
     def edit(self):
         d = self._parse_keyvalues('status')
