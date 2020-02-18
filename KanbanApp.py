@@ -14,148 +14,73 @@ import sys
 import importlib
 import pathlib
 
-class KanbanConfig:
+import click
 
-    def __init__(self, cfgpath):
-        self.config = configparser.ConfigParser()
-        self.config.read(cfgpath)
-        self.statuses = self.config.get('default', 'statuses').split(',')
-    
-    def get_store(self):
-        store_path = Path(os.getenv('HOME','')) / '.kanban.csv'
-        return KanbanDirectoryStore()
+class DefaultCmdGroup(click.Group):
 
-    def get_statuses(self):
-        return self.statuses
+    def resolve_command(self, ctx, args):
+        cmd_name, cmd, args = click.Group.resolve_command(self, ctx, args)
+        if cmd_name.isnumeric():
+            args = [cmd_name] + args
+            cmd_name = cmd.name
+        return cmd_name, cmd, args
 
-    def get_show_statuses(self):
-        return self.statuses
-
-    def get_status_order(self, status):
-        return self.statuses.index(status)
-
-
-class KanbanApp:
-
-    def __init__(self):
-        self._initialize_argument_parsers()
-        self._initialize_command_handlers()
-
-        parser = ArgumentParser()
-        parser.add_argument('-d','--kanban-store', required=False, default=os.path.join(os.environ['HOME'], '.kanban_store'))
-
-        parser.add_argument('command')
-        self.args, rest = parser.parse_known_args()
-
-        if self.args.command.isnumeric():
-            rest.insert(0, self.args.command)
-            self.command = 'edit_implicit'
+    def get_command(self, ctx, cmd_name):
+        cmd = click.Group.get_command(self, ctx, cmd_name)
+        if cmd is not None:
+            return cmd
         else:
-            self.command = self.args.command
+            c = click.Group.get_command(self, ctx, 'edit')
+            return c
 
-        self.cmd_args = self.command_parsers[self.command].parse_args(rest)
+KANBAN_STORE_ENVVAR='KANBAN_STORE'
 
-        if self.command != 'init':
-            self._load_board()
-            self._initialize_plugins_from_board()
+def kanbanstore_defined(command_ctx):
+    return command_ctx.parent.params['kanban_store'] is not None
 
+def check_kanbanstore_defined(command_ctx):
+    if not kanbanstore_defined(command_ctx):
+        command_ctx.fail("Kanban store undefined, please set %s or use --kanban-store" % KANBAN_STORE_ENVVAR)
 
-    def error(self, msg):
-        print("ERROR:", msg, file=sys.stderr)
-        sys.exit(1)
+def parse_keyvalues(keyvalues, default_key):
+    key_values = [ a.split('=',maxsplit=1) for a in keyvalues ]
 
-    def register_plugin(self, plugin_name):
-        plugin = self._load_plugin(plugin_name)
-        self.plugins.append(plugin)
-
-    def _load_plugin(self, plugin_name):
-        # import plugins.plugin_name
-        m = importlib.import_module("kanban_plugins.%s" % plugin_name)
-        return m.KanbanPlugin(self)
-
-    def _initialize_plugins_from_board(self):
-        self.plugins = []
-        for p in self.kanban_store.get_board()['plugins']:
-            self.register_plugin(p)
-        self.register_plugin('main')
-
-    def _load_board(self):
-        self.kanban_store = KanbanDirectoryStore()
-        kbstore_path = Path(self.args.kanban_store)
-        self.kanban_store.load(kbstore_path)
-
-    def _initialize_argument_parsers(self):
-        self.command_parsers = {
-                'edit_implicit': self._make_parsers_edit_implicit(),
-                'list': self._make_parsers_list(),
-                'add': self._make_parsers_add(),
-                'show': self._make_parsers_show(),
-                'init': self._make_parsers_init(),
-        }
-
-    def _initialize_command_handlers(self):
-        self.command_handlers = {
-                'edit_implicit': self.edit,
-                'list': self.list,
-                'add': self.add,
-                'show': self.show,
-                'init': self.init,
-                # 'renum'
-        }
-
-    def _make_parsers_edit_implicit(self):
-        parser = ArgumentParser()
-        parser.add_argument("item_id", type=int)
-        parser.add_argument("keyvalue", nargs="*")
-        return parser
-
-    def _make_parsers_list(self):
-        parser = ArgumentParser()
-        return parser
-
-    def _make_parsers_show(self):
-        parser = ArgumentParser()
-        parser.add_argument('--field-format', default='default')
-        # option for output format (e.g. text, csv)
-        return parser
-
-    def _make_parsers_add(self):
-        parser = ArgumentParser()
-        parser.add_argument("keyvalue", nargs="*")
-        return parser
-
-    def _make_parsers_init(self):
-        parser = ArgumentParser()
-        # TODO: template option?
-        parser.add_argument("destination")
-        return parser
-
-    def _parse_keyvalues(self, default_key):
-        key_values = [ a.split('=',maxsplit=1) for a in self.cmd_args.keyvalue ]
-
-        d = {}
-        for i, kv in enumerate(key_values):
-            if len(kv) == 1:
-                if i == 0:
-                    key = default_key
-                    value = kv[0]
-                else:
-                    # error
-                    raise Exception("non-first edit argument needs to have key=value format")
+    d = {}
+    for i, kv in enumerate(key_values):
+        if len(kv) == 1:
+            if i == 0:
+                key = default_key
+                value = kv[0]
             else:
-                key, value = kv
-            d[key] = value
-        return d
+                raise ValueError("non-first edit argument needs to have key=value format")
+        else:
+            key, value = kv
+        d[key] = value
+    return d
 
-    def init(self):
-        # test if destination board.kbb exists
-        board_dir = pathlib.Path(self.cmd_args.destination)
-        if (board_dir / "board.kbb").exists():
-            self.error("Directory already initialized")
-        # make directory and copy template
+
+@click.group(cls=DefaultCmdGroup, invoke_without_command=False)
+# -d is needed for all arguments, except init
+@click.option('-d', '--kanban-store', envvar=KANBAN_STORE_ENVVAR, type=click.Path())
+@click.pass_context
+def app(ctx, kanban_store):
+    ctx.obj = KanbanApp(ctx)
+
+@app.command()
+@click.option('--template', type=click.Path())
+@click.argument('kanban-board-dir', type=click.Path())
+@click.pass_context
+def init(ctx, template, kanban_board_dir):
+    board_dir = pathlib.Path(kanban_board_dir)
+    board_file = board_dir / "board.kbb"
+    if board_file.exists():
+        ctx.fail("Directory already initialized.")
+    try:
         board_dir.mkdir(parents=True)
-        with open(board_dir / "board.kbb", "w") as f:
-            f.write("""
+    except FileExistsError:
+        pass
+    with open(board_file, "w") as f:
+        f.write("""
 # extra plugins to load
 plugins:
 - testplugin
@@ -174,63 +99,113 @@ show_field_format:
   test: '%(id)3d %(tag)-3s %(description)s'
 """)
 
-    def edit(self):
-        d = self._parse_keyvalues('status')
-        e = KanbanItemEditor(self, self.cmd_args.item_id, d)
+@app.command()
+@click.option('--field-format', default='default')
+@click.pass_context
+def show(ctx, field_format):
+    check_kanbanstore_defined(ctx)
+    ctx.obj.initialize()
+    plugins = ctx.obj.plugins()
+    # TODO: choose renderer
+    renderer = KanbanBoardConsoleRenderer(ctx.obj, field_format)
+    for p in plugins:
+        p.show_pre(renderer)
+    for p in plugins:
+        p.show_do(renderer)
+    for p in plugins:
+        p.show_post(renderer)
 
-        for p in self.plugins:
-            p.edit_pre(e)
-        for p in self.plugins:
-            p.edit_edit(e)
-        for p in self.plugins:
-            p.edit_save(e)
-        for p in self.plugins:
-            p.edit_post(e)
+
+@app.command()
+@click.pass_context
+def list(ctx):
+    check_kanbanstore_defined(ctx)
+    ctx.obj.initialize()
+    plugins = ctx.obj.plugins()
+    for p in plugins:
+        p.list_pre()
+    for p in plugins:
+        p.list_do()
+    for p in plugins:
+        p.list_post()
+
+@app.command()
+@click.argument('keyvalues', nargs=-1, required=False)
+@click.pass_context
+def add(ctx, keyvalues):
+    check_kanbanstore_defined(ctx)
+    ctx.obj.initialize()
+    try:
+        d = parse_keyvalues(keyvalues, default_key='description')
+    except ValueError as e:
+        ctx.fail(e.args[0])
+    editor = KanbanItemEditor(ctx.obj, None, d)
+    plugins = ctx.obj.plugins()
+    for p in plugins:
+        p.add_pre(editor)
+    for p in plugins:
+        p.add_edit(editor)
+    for p in plugins:
+        p.add_save(editor)
+    for p in plugins:
+        p.add_post(editor)
 
 
-    def run(self):
-        try:
-            cb = self.command_handlers[self.command]
-            cb()
-        except KeyError:
-            pass
+@app.command()
+@click.argument('item-id', type=int)
+@click.argument('keyvalues', nargs=-1, required=False)
+@click.pass_context
+def edit(ctx, item_id, keyvalues):
+    check_kanbanstore_defined(ctx)
+    ctx.obj.initialize()
+    try:
+        d = parse_keyvalues(keyvalues, default_key='status')
+    except ValueError as e:
+        ctx.fail(e.args[0])
+    editor = KanbanItemEditor(ctx.obj, item_id, d)
+    plugins = ctx.obj.plugins()
+    for p in plugins:
+        p.edit_pre(editor)
+    for p in plugins:
+        p.edit_edit(editor)
+    for p in plugins:
+        p.edit_save(editor)
+    for p in plugins:
+        p.edit_post(editor)
 
-    def add(self):
-        d = self._parse_keyvalues('description')
-        editor = KanbanItemEditor(self, None, d)
+class KanbanApp:
 
-        for p in self.plugins:
-            p.add_pre(editor)
-        for p in self.plugins:
-            p.add_edit(editor)
-        for p in self.plugins:
-            p.add_save(editor)
-        for p in self.plugins:
-            p.add_post(editor)
+    def __init__(self, parent_ctx):
+        self.parent_ctx = parent_ctx
 
-    def show(self):
-        # TODO: choose renderer
-        renderer = KanbanBoardConsoleRenderer(self, self.kanban_store.get_board())
-        for p in self.plugins:
-            p.show_pre(renderer)
-        for p in self.plugins:
-            p.show_do(renderer)
-        for p in self.plugins:
-            p.show_post(renderer)
+    def initialize(self):
+        self._load_kanban_store()
+        self._load_plugins()
 
-    def list(self):
-        for p in self.plugins:
-            p.list_pre()
-        for p in self.plugins:
-            p.list_do()
-        for p in self.plugins:
-            p.list_post()
+    def plugins(self):
+        return self._plugins
 
-    commands = {
-            'list': list,
-            'show': show,
-    }
+    def error(self, msg):
+        self.parent_ctx.fail(msg)
+
+    def _load_kanban_store(self):
+        kanbanstore_dir = pathlib.Path(self.parent_ctx.params['kanban_store'])
+        self.kanban_store = KanbanDirectoryStore()
+        self.kanban_store.load(kanbanstore_dir)
+
+    def _load_plugin(self, app, plugin_name):
+        m = importlib.import_module("kanban_plugins.%s" % plugin_name)
+        return m.KanbanPlugin(app)
+
+    def _load_plugins(self):
+        self._plugins = []
+        for p in self.kanban_store.get_board()['plugins'] + ['main']:
+            plugin = self._load_plugin(self, p)
+            self._plugins.append(plugin)
+
+    def get_show_field_format(self, fmtname):
+        return self.kanban_store.get_board().get('show_field_format')[fmtname]
 
 
 if __name__=="__main__":
-    KanbanApp().run()
+    app()
