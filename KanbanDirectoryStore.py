@@ -14,6 +14,7 @@ class KanbanDirectoryStore:
         if self._items != []:
             self.max_idx = max( [ x['id'] for x in self._items ] )
         self.board = self._load_board(path / "board.kbb")
+        self.kbstore_path = path
 
     def save(self, path=None):
         if not path:

@@ -51,7 +51,7 @@ class KanbanItemEditor:
             self.app.kanban_store.add_item(self.item)
         else:
             self.app.kanban_store.set_item(self.item_id, self.item)
-        self.app.kanban_store.save(self.app.args.kanban_store)
+        self.app.kanban_store.save()
 
     def _create_editor_template(self, item):
         editor_values = {}
