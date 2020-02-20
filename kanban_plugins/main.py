@@ -39,9 +39,10 @@ class KanbanPlugin(BaseKanbanPlugin):
 
     def add_pre(self, editor):
         self.set_default_fields(editor)
+        defaults = self.kanban_store.get_board().get('default_fields', {})
+        editor.set_item(defaults)
 
     def add_edit(self, editor):
-        editor.set_item({})
         editor.edit_item()
 
     def add_save(self, editor):
