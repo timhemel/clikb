@@ -2,7 +2,7 @@
 
 from KanbanDirectoryStore import KanbanDirectoryStore
 from KanbanItemEditor import KanbanItemEditor
-from KanbanBoardRenderer import KanbanBoardConsoleRenderer
+from KanbanBoardRenderer import *
 from argparse import ArgumentParser
 from pathlib import Path
 import os
@@ -99,15 +99,24 @@ show_field_format:
   test: '%(id)3d %(tag)-3s %(description)s'
 """)
 
+renderers = {
+        'console': KanbanBoardConsoleRenderer,
+        'csv': KanbanBoardCSVRenderer,
+}
+
 @app.command()
 @click.option('--field-format', default='default')
+@click.option('--out-format', default='console')
+@click.option('-o','--out-file', type=click.File("w"), default='-')
 @click.pass_context
-def show(ctx, field_format):
+def show(ctx, field_format, out_format, out_file):
     check_kanbanstore_defined(ctx)
     ctx.obj.initialize()
     plugins = ctx.obj.plugins()
-    # TODO: choose renderer
-    renderer = KanbanBoardConsoleRenderer(ctx.obj, field_format)
+    try:
+        renderer = renderers[out_format](ctx.obj, field_format, out_file)
+    except KeyError:
+        ctx.fail("No such output format: %s" % out_format)
     for p in plugins:
         p.show_pre(renderer)
     for p in plugins:

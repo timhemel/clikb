@@ -48,9 +48,7 @@ class KanbanPlugin(BaseKanbanPlugin):
     def add_save(self, editor):
         editor.save_item(self.kanban_store)
 
-
     def show_do(self, renderer):
         rows = renderer.group_by_status()
-        output = renderer.render(rows)
-        print(output)
+        renderer.render(rows)
 

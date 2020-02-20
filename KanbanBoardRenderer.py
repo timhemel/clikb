@@ -1,6 +1,8 @@
 import itertools
 import shutil
 from collections import defaultdict
+import csv
+import io
 
 class KanbanBoardBaseRenderer:
 
@@ -21,9 +23,10 @@ class KanbanBoardBaseRenderer:
 
 class KanbanBoardConsoleRenderer(KanbanBoardBaseRenderer):
 
-    def __init__(self, app, field_format):
+    def __init__(self, app, field_format, out_file):
         KanbanBoardBaseRenderer.__init__(self, app)
         self.field_format_name = field_format
+        self.outfile = out_file
         try:
             self.fieldfmt = self.app.get_show_field_format(self.field_format_name)
         except KeyError:
@@ -63,6 +66,36 @@ class KanbanBoardConsoleRenderer(KanbanBoardBaseRenderer):
     def render(self, rows):
         lines = [ self._render_head() ]
         lines += [ self._render_row(r) +"\n" for r in rows ]
-        return "".join(lines)
+        self.outfile.write("".join(lines))
 
+
+class KanbanBoardCSVRenderer(KanbanBoardBaseRenderer):
+
+    def __init__(self, app, field_format, out_file):
+        KanbanBoardBaseRenderer.__init__(self, app)
+        self.field_format_name = field_format
+        self.outfile = out_file
+        try:
+            self.fieldfmt = self.app.get_show_field_format(self.field_format_name)
+        except KeyError:
+            self.app.error("Unknown field format: %s" % self.field_format_name)
+
+    def _render_field_content(self, field):
+        d = defaultdict( lambda : '?' )
+        d.update(field)
+        return self.fieldfmt % d
+
+    def _render_field(self, field):
+        if field is not None:
+            fieldtext = self._render_field_content(field)
+        else:
+            fieldtext = ""
+        return fieldtext
+
+
+    def render(self, rows):
+        w = csv.writer(self.outfile)
+        w.writerow(self.show_statuses)
+        for r in rows:
+            w.writerow( [ self._render_field(x) for x in r ])
 
