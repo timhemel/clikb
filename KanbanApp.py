@@ -95,8 +95,11 @@ default_fields:
   status: READY
 # views to display the fields
 show_field_format:
-  default: '%(id)3d %(description)s'
-  test: '%(id)3d %(tag)-3s %(description)s'
+  console:
+    default: '%(id)3d %(description)s'
+    test: '%(id)3d %(tag)-3s %(description)s'
+  csv:
+    default: '%(id)3d %(description)s'
 """)
 
 renderers = {
@@ -114,9 +117,10 @@ def show(ctx, field_format, out_format, out_file):
     ctx.obj.initialize()
     plugins = ctx.obj.plugins()
     try:
-        renderer = renderers[out_format](ctx.obj, field_format, out_file)
+        field_fmt = ctx.obj.kanban_store.get_board().get('show_field_format')[out_format][field_format]
+        renderer = renderers[out_format](ctx.obj, field_fmt, out_file)
     except KeyError:
-        ctx.fail("No such output format: %s" % out_format)
+        ctx.fail("No such output format/format name: %s/%s" % (out_format, field_format))
     for p in plugins:
         p.show_pre(renderer)
     for p in plugins:

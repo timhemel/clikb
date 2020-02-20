@@ -23,14 +23,10 @@ class KanbanBoardBaseRenderer:
 
 class KanbanBoardConsoleRenderer(KanbanBoardBaseRenderer):
 
-    def __init__(self, app, field_format, out_file):
+    def __init__(self, app, field_fmt, out_file):
         KanbanBoardBaseRenderer.__init__(self, app)
-        self.field_format_name = field_format
         self.outfile = out_file
-        try:
-            self.fieldfmt = self.app.get_show_field_format(self.field_format_name)
-        except KeyError:
-            self.app.error("Unknown field format: %s" % self.field_format_name)
+        self.fieldfmt = field_fmt
         width, height = shutil.get_terminal_size() # TODO: ask click
         self.column_width = width // len(self.show_statuses)
 
@@ -71,14 +67,10 @@ class KanbanBoardConsoleRenderer(KanbanBoardBaseRenderer):
 
 class KanbanBoardCSVRenderer(KanbanBoardBaseRenderer):
 
-    def __init__(self, app, field_format, out_file):
+    def __init__(self, app, field_fmt, out_file):
         KanbanBoardBaseRenderer.__init__(self, app)
-        self.field_format_name = field_format
         self.outfile = out_file
-        try:
-            self.fieldfmt = self.app.get_show_field_format(self.field_format_name)
-        except KeyError:
-            self.app.error("Unknown field format: %s" % self.field_format_name)
+        self.fieldfmt = field_fmt
 
     def _render_field_content(self, field):
         d = defaultdict( lambda : '?' )
