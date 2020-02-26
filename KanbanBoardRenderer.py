@@ -51,14 +51,14 @@ class KanbanBoardConsoleRenderer(KanbanBoardBaseRenderer):
 
     def _render_head_field1(self, s):
         t = "│ " + s + " " * self.column_width
-        return t[:self.column_width - 1]
+        return t[:self.column_width ]
 
     def _render_head_field2(self, s):
         t = "┕━" + "━" * (len(s)+1) + " " * self.column_width
-        return t[:self.column_width - 1]
+        return t[:self.column_width ]
 
     def _pad_and_truncate(self, text):
-        return (text + " " * (self.column_width-1))[:self.column_width-1] 
+        return (text + " " * (self.column_width))[:self.column_width] 
     def _render_field(self, field):
         d = defaultdict( lambda : '?' )
         d.update(field)
