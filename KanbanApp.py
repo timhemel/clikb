@@ -79,7 +79,7 @@ def init(ctx, template, kanban_board_dir):
         board_dir.mkdir(parents=True)
     except FileExistsError:
         pass
-    with open(board_file, "w") as f:
+    with open(str(board_file), "w") as f:
         f.write("""
 # extra plugins to load
 plugins:
