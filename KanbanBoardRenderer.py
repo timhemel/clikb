@@ -1,8 +1,9 @@
 import itertools
 import shutil
-from collections import defaultdict
+from collections import defaultdict, OrderedDict
 import csv
 import io
+import wcwidth
 
 class KanbanBoardBaseRenderer:
 
@@ -10,7 +11,7 @@ class KanbanBoardBaseRenderer:
         self.app = app
         self.board = app.kanban_store.get_board()
         self.show_statuses = self.board.get('show_statuses', [])
-        self.computed_fields = {}
+        self.computed_fields = OrderedDict()
 
     def add_computed_field(self, key, value):
         self.computed_fields[key] = value
@@ -67,7 +68,7 @@ class KanbanBoardConsoleRenderer(KanbanBoardBaseRenderer):
         d = defaultdict( lambda : '?' )
         d.update(field)
         for k,v in self.computed_fields.items():
-            d[k] = v(field)
+            d[k] = v(d)
 
         return [ self._pad_and_truncate(f['text'] % d)
                 for f in self.fieldfmt ]

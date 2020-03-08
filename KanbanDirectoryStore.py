@@ -92,3 +92,10 @@ class KanbanDirectoryStore:
     def get_board(self):
         return self.board
 
+    def get_plugin_conf(self, plugin_name):
+        plugins = self.get_board().get('plugin_conf', [])
+        plugin_conf = [ p for p in plugins if plugin_name in p ]
+        if plugin_conf:
+            return plugin_conf[0][plugin_name]
+        return {}
+
