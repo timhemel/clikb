@@ -1,6 +1,5 @@
 
 from BaseKanbanPlugin import BaseKanbanPlugin
-import argparse
 
 class KanbanPlugin(BaseKanbanPlugin):
 
