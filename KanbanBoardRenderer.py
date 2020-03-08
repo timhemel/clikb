@@ -10,6 +10,10 @@ class KanbanBoardBaseRenderer:
         self.app = app
         self.board = app.kanban_store.get_board()
         self.show_statuses = self.board.get('show_statuses', [])
+        self.computed_fields = {}
+
+    def add_computed_field(self, key, value):
+        self.computed_fields[key] = value
 
     def group_by_status(self):
         items = self.app.kanban_store.items()
@@ -62,9 +66,11 @@ class KanbanBoardConsoleRenderer(KanbanBoardBaseRenderer):
     def _render_field(self, field):
         d = defaultdict( lambda : '?' )
         d.update(field)
+        for k,v in self.computed_fields.items():
+            d[k] = v(field)
+
         return [ self._pad_and_truncate(f['text'] % d)
                 for f in self.fieldfmt ]
-        # fieldtext = "├╴" + self._render_field_content(field)
 
     def _render_item(self, item):
         lines = self._render_field(item)
