@@ -38,7 +38,7 @@ class KanbanDirectoryStore:
 
     def _save_item(self, path, idx, item):
         fn = pathlib.Path(path) / ("%05d.kbi" % idx)
-        with open(str(fn), "w") as f:
+        with fn.open("w") as f:
             d = item.copy()
             try:
                 del d['id']
@@ -49,19 +49,19 @@ class KanbanDirectoryStore:
     def _load_item(self, full_path):
         idx = int(full_path.stem)
 
-        with open(str(full_path), "r") as f:
+        with full_path.open("r") as f:
             d = yaml.safe_load(f)
             d['id'] = idx
             return d
 
     def _save_board(self, path):
         fn = pathlib.Path(path) / "board.kbb"
-        with open(str(fn), "w") as f:
+        with fn.open("w") as f:
             yaml.safe_dump(self.board, stream=f, default_flow_style=False)
 
 
     def _load_board(self, full_path):
-        with open(str(full_path), "r") as f:
+        with full_path.open("r") as f:
             d = yaml.safe_load(f)
             return d
 
