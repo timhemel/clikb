@@ -63,7 +63,12 @@ class KanbanBoardConsoleRenderer(KanbanBoardBaseRenderer):
         return t[:self.column_width ]
 
     def _pad_and_truncate(self, text):
-        return (text + " " * (self.column_width))[:self.column_width] 
+        s = (text + " " * (self.column_width))[:self.column_width] 
+        diff = wcwidth.wcswidth(s) - len(s)
+        if diff > 0:
+            s = s[:-diff]
+        return s
+
     def _render_field(self, field):
         d = defaultdict( lambda : '?' )
         d.update(field)
