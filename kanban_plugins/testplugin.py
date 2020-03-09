@@ -5,3 +5,8 @@ class KanbanPlugin(BaseKanbanPlugin):
 
     def pre_list(self):
         print("prelist")
+
+    def show_pre(self, renderer):
+        # print(dir(self.kanban_store))
+        # print(self.kanban_store.items())
+        pass

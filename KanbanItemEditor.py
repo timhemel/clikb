@@ -20,6 +20,9 @@ class KanbanItemEditor:
     def set_item(self, d):
         self.item = d
 
+    def get_item(self):
+        return self.item
+
     def edit_item(self):
 
         if self.interactive is True:
