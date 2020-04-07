@@ -7,12 +7,14 @@ class KanbanPlugin(BaseKanbanPlugin):
         today = datetime.date.today()
         due = item.get('due')
         if due:
-            if type(due) != datetime.date:
+            if type(due) != datetime.date and type(due) != datetime.datetime:
                 date_format = self.kanban_store.get_board().get('date_format', '%Y-%m-%d')
                 try:
                     due = datetime.datetime.strptime(due, date_format)
                 except ValueError:
                     due = today
+            if type(due) == datetime.datetime:
+                due = due.date()
             delta = due - today
             return delta
         return None

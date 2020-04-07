@@ -3,8 +3,9 @@ from BaseKanbanPlugin import BaseKanbanPlugin
 
 class KanbanPlugin(BaseKanbanPlugin):
 
-    def add_status_change(self, item, status):
+    def add_status_change(self, editor, item, status):
         now = datetime.datetime.now()
+        status_changes = item.get('_status_changes', [])
         status_changes.append({
             'status': status, 'date': now})
         item['_status_changes'] = status_changes
@@ -14,7 +15,7 @@ class KanbanPlugin(BaseKanbanPlugin):
         item = editor.get_item()
         status_changes = []
         current_status = item.get('status')
-        self.add_status_change(item, current_status)
+        self.add_status_change(editor, item, current_status)
 
     def edit_save(self, editor):
         item = editor.get_item()
@@ -24,5 +25,5 @@ class KanbanPlugin(BaseKanbanPlugin):
             status_changes[-1]['status'] == current_status:
                 pass
         else:
-            self.add_status_change(item, current_status)
+            self.add_status_change(editor, item, current_status)
 
