@@ -60,7 +60,7 @@ def parse_keyvalues(keyvalues, default_key):
 
 
 @click.group(cls=DefaultCmdGroup, invoke_without_command=False)
-# -d is needed for all arguments, except init
+# -d is needed for all arguments
 @click.option('-d', '--kanban-store', envvar=KANBAN_STORE_ENVVAR, type=click.Path())
 @click.pass_context
 def app(ctx, kanban_store):
@@ -68,10 +68,10 @@ def app(ctx, kanban_store):
 
 @app.command()
 @click.option('--template', type=click.Path())
-@click.argument('kanban-board-dir', type=click.Path())
 @click.pass_context
-def init(ctx, template, kanban_board_dir):
-    board_dir = pathlib.Path(kanban_board_dir)
+def init(ctx, template):
+    check_kanbanstore_defined(ctx)
+    board_dir = pathlib.Path(ctx.parent.params['kanban_store'])
     board_file = board_dir / "board.kbb"
     if board_file.exists():
         ctx.fail("Directory already initialized.")
