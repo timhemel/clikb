@@ -12,10 +12,7 @@ class KanbanPlugin(BaseKanbanPlugin):
 
     def set_default_fields(self, editor):
         defaults = self.kanban_store.get_board().get('default_fields', {})
-        editor.insert_edit_fields( "Main fields", [
-            ('description', defaults.get('description', '')),
-            ('status', defaults.get('status', ''))
-            ], pos=0 )
+        editor.insert_edit_fields( "Main fields", defaults.items(), pos=0 )
 
     def edit_pre(self, editor):
         self.set_default_fields(editor)
