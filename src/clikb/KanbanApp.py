@@ -2,7 +2,7 @@
 
 from KanbanDirectoryStore import KanbanDirectoryStore
 from KanbanItemEditor import KanbanItemEditor
-from KanbanBoardRenderer import *
+from kanban_board_renderer import *
 from argparse import ArgumentParser
 from pathlib import Path
 import os
