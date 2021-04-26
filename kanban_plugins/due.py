@@ -1,5 +1,5 @@
 import datetime
-from BaseKanbanPlugin import BaseKanbanPlugin
+from base_kanban_plugin import BaseKanbanPlugin
 
 class KanbanPlugin(BaseKanbanPlugin):
 
