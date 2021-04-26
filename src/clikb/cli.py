@@ -6,6 +6,7 @@ from .kanban_board_renderer import *
 import importlib
 import pathlib
 import click
+import pkg_resources
 
 class DefaultCmdGroup(click.Group):
 
@@ -198,8 +199,19 @@ class KanbanApp:
         self.kanban_store.load(kanbanstore_dir)
 
     def _load_plugin(self, app, plugin_name):
-        m = importlib.import_module("kanban_plugins.%s" % plugin_name)
-        return m.KanbanPlugin(app)
+        builtin_plugin_dir = pkg_resources.resource_filename('clikb', 'builtin_plugins')
+        plugin_path = self.parent_ctx.params['kanban_plugin_path'] + [builtin_plugin_dir]
+        for fn in plugin_path:
+            p = pathlib.Path(fn)
+            try:
+                spec = importlib.util.spec_from_file_location(plugin_name, p / (plugin_name + '.py'))
+                m = importlib.util.module_from_spec(spec)
+                spec.loader.exec_module(m)
+                return m.KanbanPlugin(app)
+            except FileNotFoundError as e:
+                pass
+
+        raise ModuleNotFoundError(plugin_name)
 
     def _load_plugins(self):
         self._plugins = []
