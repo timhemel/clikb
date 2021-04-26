@@ -31,7 +31,7 @@ class KanbanDirectoryStore:
             self._save_item(path, idx, item)
 
         # TODO: make this optional
-        # self._save_board(path)
+        self._save_board(path)
 
     def _create_kbstore_directory(self, path):
         pathlib.Path(path).mkdir(parents=True, exist_ok=True)
