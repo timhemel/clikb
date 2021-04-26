@@ -1,4 +1,4 @@
-from base_kanban_plugin import BaseKanbanPlugin
+from clikb.base_kanban_plugin import BaseKanbanPlugin
 
 class KanbanPlugin(BaseKanbanPlugin):
     pass
