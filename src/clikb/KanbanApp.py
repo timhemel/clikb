@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 from kanban_directory_store import KanbanDirectoryStore
-from KanbanItemEditor import KanbanItemEditor
+from kanban_item_editor import KanbanItemEditor
 from kanban_board_renderer import *
 from argparse import ArgumentParser
 from pathlib import Path
