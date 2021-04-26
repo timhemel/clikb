@@ -3,17 +3,8 @@
 from kanban_directory_store import KanbanDirectoryStore
 from kanban_item_editor import KanbanItemEditor
 from kanban_board_renderer import *
-from argparse import ArgumentParser
-from pathlib import Path
-import os
-import configparser
-import functools
-import itertools
-import csv
-import sys
 import importlib
 import pathlib
-
 import click
 
 class DefaultCmdGroup(click.Group):
