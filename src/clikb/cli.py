@@ -7,6 +7,7 @@ import importlib
 import pathlib
 import click
 import pkg_resources
+import logging
 
 class DefaultCmdGroup(click.Group):
 
@@ -54,11 +55,15 @@ def parse_keyvalues(keyvalues, default_key):
 
 @click.group(cls=DefaultCmdGroup, invoke_without_command=False)
 # -d is needed for all arguments
+@click.option('-v', '--verbose', is_flag=True)
 @click.option('-d', '--kanban-store', envvar=KANBAN_STORE_ENVVAR, type=click.Path())
 @click.option('-P', '--kanban-plugin-path', envvar=KANBAN_PLUGIN_PATH_ENVVAR, type=str)
 @click.pass_context
-def app(ctx, kanban_store, kanban_plugin_path):
+def app(ctx, verbose, kanban_store, kanban_plugin_path):
     ctx.obj = KanbanApp(ctx)
+    if verbose:
+        logging.basicConfig(level=logging.DEBUG)
+
 
 @app.command()
 @click.option('--template', type=click.Path())
@@ -203,6 +208,7 @@ class KanbanApp:
     def _load_plugin(self, app, plugin_name):
         builtin_plugin_dir = pkg_resources.resource_filename('clikb', 'builtin_plugins')
         plugin_path = self.parent_ctx.params['kanban_plugin_path'].split(':') + [builtin_plugin_dir]
+        logging.debug(f'plugin path: {plugin_path}')
         for fn in plugin_path:
             p = pathlib.Path(fn)
             try:
