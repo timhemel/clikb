@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 
-from kanban_directory_store import KanbanDirectoryStore
-from kanban_item_editor import KanbanItemEditor
-from kanban_board_renderer import *
+from .kanban_directory_store import KanbanDirectoryStore
+from .kanban_item_editor import KanbanItemEditor
+from .kanban_board_renderer import *
 import importlib
 import pathlib
 import click
