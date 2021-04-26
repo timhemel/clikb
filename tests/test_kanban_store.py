@@ -1,7 +1,7 @@
 import unittest
 import pathlib
 
-from KanbanDirectoryStore import KanbanDirectoryStore
+from kanban_directory_store import KanbanDirectoryStore
 
 class TestKanbanStore(unittest.TestCase):
 
