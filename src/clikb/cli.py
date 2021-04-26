@@ -26,6 +26,7 @@ class DefaultCmdGroup(click.Group):
             return c
 
 KANBAN_STORE_ENVVAR='KANBAN_STORE'
+KANBAN_PLUGIN_PATH_ENVVAR='KANBAN_PLUGIN_PATH'
 
 def kanbanstore_defined(command_ctx):
     return command_ctx.parent.params['kanban_store'] is not None
@@ -54,8 +55,9 @@ def parse_keyvalues(keyvalues, default_key):
 @click.group(cls=DefaultCmdGroup, invoke_without_command=False)
 # -d is needed for all arguments
 @click.option('-d', '--kanban-store', envvar=KANBAN_STORE_ENVVAR, type=click.Path())
+@click.option('-P', '--kanban-plugin-path', envvar=KANBAN_PLUGIN_PATH_ENVVAR, type=str)
 @click.pass_context
-def app(ctx, kanban_store):
+def app(ctx, kanban_store, kanban_plugin_path):
     ctx.obj = KanbanApp(ctx)
 
 @app.command()
@@ -200,7 +202,7 @@ class KanbanApp:
 
     def _load_plugin(self, app, plugin_name):
         builtin_plugin_dir = pkg_resources.resource_filename('clikb', 'builtin_plugins')
-        plugin_path = self.parent_ctx.params['kanban_plugin_path'] + [builtin_plugin_dir]
+        plugin_path = self.parent_ctx.params['kanban_plugin_path'].split(':') + [builtin_plugin_dir]
         for fn in plugin_path:
             p = pathlib.Path(fn)
             try:
